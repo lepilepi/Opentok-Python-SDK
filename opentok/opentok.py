@@ -457,3 +457,27 @@ class OpenTok(object):
                   }
 
         return jwt.encode(payload, self.api_secret, algorithm='HS256')
+
+
+    def connection_url(self, session_id, connection_id):
+        """For internal use."""
+        url = self.api_url + '/v2/project/%s/session/%s/connection/%s' % (self.api_key, session_id, connection_id)
+        return url
+
+    def force_disconnect_connection(self, session_id, connetion_id):
+        """
+        Forces a client endpoint to disconnect from a session
+
+        :param String session_id: The session ID of the connection to be terminated.
+        :param String connetion_id: The ID of the connection to be terminated.
+        """
+        response = requests.delete(self.connection_url(session_id, connetion_id), headers=self.headers(), proxies=self.proxies)
+
+        if response.status_code == 400:
+            raise OpenTokException(u('Cannot terminate connection: %s' % response.json().get('message')))
+        elif response.status_code == 403:
+            raise AuthError()
+        elif response.status_code == 404:
+            raise NotFoundError("Connection or Session not found")
+        elif not response.status_code == 204:
+            raise RequestError("An unexpected error occurred", response.status_code)
